@@ -132,7 +132,7 @@ function displayCardsDynamically(collection) {
                 newcard.querySelector('.card-image').src = `./images/${hikeCode}.jpg`; //Example: NV01.jpg
                 newcard.querySelector('a').href = "eachHike.html?docID="+docID;
                 newcard.querySelector('i').id = 'save-' + docID;   //guaranteed to be unique
-                newcard.querySelector('i').onclick = () => saveBookmark(docID);
+                newcard.querySelector('i').onclick = () => updateBookmark(docID);
 
                 currentUser.get().then(userDoc => {
                     //get the user name
@@ -161,19 +161,32 @@ function displayCardsDynamically(collection) {
 // It adds the hike to the "bookmarks" array
 // Then it will change the bookmark icon from the hollow to the solid version. 
 //-----------------------------------------------------------------------------
-function saveBookmark(hikeDocID) {
-    // Manage the backend process to store the hikeDocID in the database, recording which hike was bookmarked by the user.
-currentUser.update({
-                    // Use 'arrayUnion' to add the new bookmark ID to the 'bookmarks' array.
+function updateBookmark(hikeDocID){
+    currentUser.get().then(doc => {
+        if(doc.data().bookmarks.includes(hikeDocID)){
+            currentUser.update({
+                bookmarks: firebase.firestore.FieldValue.arrayRemove(hikeDocID)
+            }).then(function () {
+                console.log("bookmark has been removed for " + doc.data().name);
+                let iconID = 'save-' + hikeDocID;
+                document.getElementById(iconID).innerText = 'bookmark_border'
+            })
+        } else {
+            // Manage the backend process to store the hikeDocID in the database, recording which hike was bookmarked by the user.
+            currentUser.update({
+                // Use 'arrayUnion' to add the new bookmark ID to the 'bookmarks' array.
             // This method ensures that the ID is added only if it's not already present, preventing duplicates.
-        bookmarks: firebase.firestore.FieldValue.arrayUnion(hikeDocID)
-    })
+            bookmarks: firebase.firestore.FieldValue.arrayUnion(hikeDocID)
+            })
             // Handle the front-end update to change the icon, providing visual feedback to the user that it has been clicked.
-    .then(function () {
-        console.log("bookmark has been saved for" + hikeDocID);
-        let iconID = 'save-' + hikeDocID;
-        //console.log(iconID);
-                    //this is to change the icon of the hike that was saved to "filled"
-        document.getElementById(iconID).innerText = 'bookmark';
-    });
+            .then(function () {
+            console.log("bookmark has been saved for " + doc.data().name);
+            let iconID = 'save-' + hikeDocID;
+            //console.log(iconID);
+                //this is to change the icon of the hike that was saved to "filled"
+            document.getElementById(iconID).innerText = 'bookmark';
+            });
+        }
+    })
+
 }
